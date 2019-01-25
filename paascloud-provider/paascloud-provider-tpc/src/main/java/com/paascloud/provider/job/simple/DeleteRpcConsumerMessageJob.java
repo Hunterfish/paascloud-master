@@ -31,7 +31,7 @@ import javax.annotation.Resource;
  * @author paascloud.net @gmail.com
  */
 @Slf4j
-@ElasticJobConfig(cron = "0 0 0 1/1 * ?")
+@ElasticJobConfig(cron = "0 0 0 1/1 * ?")	// 每天00:00:00
 public class DeleteRpcConsumerMessageJob implements SimpleJob {
 	@Resource
 	private PaascloudProperties paascloudProperties;

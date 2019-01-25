@@ -514,7 +514,7 @@ public class UacUserServiceImpl extends BaseService<UacUser> implements UacUserS
 		Date row = new Date();
 		String salt = String.valueOf(generateId());
 		// 封装注册信息
-		long id = generateId();
+		long id = generateId();	// id 雪花算法生成
 		UacUser uacUser = new UacUser();
 		uacUser.setLoginName(registerDto.getLoginName());
 		uacUser.setSalt(salt);
@@ -786,8 +786,9 @@ public class UacUserServiceImpl extends BaseService<UacUser> implements UacUserS
 		Set<String> to = Sets.newHashSet();
 		to.add(user.getEmail());
 
-
+		// 构建激活成功消息体
 		MqMessageData mqMessageData = emailProducer.sendEmailMq(to, UacEmailTemplateEnum.ACTIVE_USER_SUCCESS, AliyunMqTopicConstants.MqTagEnum.ACTIVE_USER_SUCCESS, param);
+		// 可靠消息服务发送邮件
 		userManager.activeUser(mqMessageData, update, activeUserKey);
 	}
 

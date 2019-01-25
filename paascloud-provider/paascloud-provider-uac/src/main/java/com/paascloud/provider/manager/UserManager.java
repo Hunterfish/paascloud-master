@@ -74,6 +74,7 @@ public class UserManager {
 	@MqProducerStore
 	public void activeUser(final MqMessageData mqMessageData, final UacUser uacUser, final String activeUserKey) {
 		log.info("激活用户. mqMessageData={}, user={}", mqMessageData, uacUser);
+		// 更新用户信息
 		int result = uacUserMapper.updateByPrimaryKeySelective(uacUser);
 		if (result < 1) {
 			throw new UacBizException(ErrorCodeEnum.UAC10011038, uacUser.getId());

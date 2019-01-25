@@ -36,7 +36,8 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * 基于Zookeeper的注册中心.
+ * 基于 Zookeeper 的注册中心
+ * 生成 zookeeper 客户端操作类 CuratorFramework
  *
  * @author zhangliang
  */
@@ -47,8 +48,10 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 
 	private final Map<String, TreeCache> caches = new HashMap<>();
 
+	/** zookeeper操作客户端 */
 	@Getter
 	private CuratorFramework client;
+	/** DistributedAtomicInteger：Curator框架分布式场景的分布式计数器 */
 	@Getter
 	private DistributedAtomicInteger distributedAtomicInteger;
 
@@ -67,15 +70,23 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 	@Override
 	public void init() {
 		log.debug("Elastic job: zookeeper registry center init, server lists is: {}.", zkConfig.getZkAddressList());
+
+		// Curator 建造者模式创建zookeeper客户端 <https://www.jianshu.com/p/70151fc0ef5d>
 		CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
+				// 参数1：connectString zookeeper服务器列表（服务器地址及端口号，多个zookeeper服务器地址以 "," 分隔
 				.connectString(zkConfig.getZkAddressList())
+				// 参数2：retryPolicy 重试策略（一共四种，可以自行实现RetryPolicy接口）
+				// 分别为：ExponentialBackoffRetry（重试指定的次数, 且每一次重试之间停顿的时间逐渐增加）
 				.retryPolicy(new ExponentialBackoffRetry(zkConfig.getBaseSleepTimeMilliseconds(), zkConfig.getMaxRetries(), zkConfig.getMaxSleepTimeMilliseconds()));
 		if (0 != zkConfig.getSessionTimeoutMilliseconds()) {
+			// 参数3：sessionTimeoutMs 会话超时时间，默认60000ms
 			builder.sessionTimeoutMs(zkConfig.getSessionTimeoutMilliseconds());
 		}
 		if (0 != zkConfig.getConnectionTimeoutMilliseconds()) {
+			// 参数4：connectionTimeoutMs 连接创建超时时间，默认15000ms
 			builder.connectionTimeoutMs(zkConfig.getConnectionTimeoutMilliseconds());
 		}
+		// 5. 连接Zookeeper的权限令牌
 		if (!Strings.isNullOrEmpty(zkConfig.getDigest())) {
 			builder.authorization("digest", zkConfig.getDigest().getBytes(Charsets.UTF_8))
 					.aclProvider(new ACLProvider() {
@@ -92,6 +103,7 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 					});
 		}
 		client = builder.build();
+		// 启动zookeeper客户端
 		client.start();
 		try {
 			if (!client.blockUntilConnected(zkConfig.getMaxSleepTimeMilliseconds() * zkConfig.getMaxRetries(), TimeUnit.MILLISECONDS)) {
@@ -202,7 +214,7 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 	}
 
 	/**
-	 * Gets num children.
+	 * Gets num children.获取子节点数量
 	 *
 	 * @param key the key
 	 *
@@ -212,6 +224,7 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 	public int getNumChildren(final String key) {
 		Stat stat = null;
 		try {
+			// checkExists: 检查节点是否存在; forPath: 指定要操作的ZNode节点
 			stat = client.checkExists().forPath(key);
 		} catch (final Exception ex) {
 			RegExceptionHandler.handleException(ex);
@@ -239,7 +252,7 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 	}
 
 	/**
-	 * Persist.
+	 * Persist.持久化
 	 *
 	 * @param key   the key
 	 * @param value the value
@@ -284,6 +297,8 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 	@Override
 	public void update(final String key, final String value) {
 		try {
+			// inTransaction()：
+			// 调用此方法开启一个ZooKeeper事务. 可以复合create, setData, check, and/or delete 等操作然后调用commit()作为一个原子操作提交
 			client.inTransaction().check().forPath(key).and().setData().forPath(key, value.getBytes(Charsets.UTF_8)).and().commit();
 			//CHECKSTYLE:OFF
 		} catch (final Exception ex) {
@@ -475,7 +490,7 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 	}
 
 	/**
-	 * Register mq.
+	 * Register mq to zookeeper center.
 	 *
 	 * @param app           the app
 	 * @param host          the host
@@ -485,17 +500,20 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
 	 */
 	@Override
 	public void registerMq(final String app, final String host, final String producerGroup, final String consumerGroup, String namesrvAddr) {
-		// 注册生产者
+		// 生产者 zookeeper 节点路径
 		final String producerRootPath = GlobalConstant.ZK_REGISTRY_PRODUCER_ROOT_PATH + GlobalConstant.Symbol.SLASH + app;
+		// 消费者 zookeeper 节点路径
 		final String consumerRootPath = GlobalConstant.ZK_REGISTRY_CONSUMER_ROOT_PATH + GlobalConstant.Symbol.SLASH + app;
 		ReliableMessageRegisterDto dto;
+		// 1. 注册生产者
 		if (StringUtils.isNotEmpty(producerGroup)) {
 			dto = new ReliableMessageRegisterDto().setProducerGroup(producerGroup).setNamesrvAddr(namesrvAddr);
 			String producerJson = JSON.toJSONString(dto);
+			// 保存到 zookeeper 节点和数据
 			this.persist(producerRootPath, producerJson);
 			this.persistEphemeral(producerRootPath + GlobalConstant.Symbol.SLASH + host, DateUtil.now());
 		}
-		// 注册消费者
+		// 2. 注册消费者
 		if (StringUtils.isNotEmpty(consumerGroup)) {
 			dto = new ReliableMessageRegisterDto().setConsumerGroup(consumerGroup).setNamesrvAddr(namesrvAddr);
 			String producerJson = JSON.toJSONString(dto);

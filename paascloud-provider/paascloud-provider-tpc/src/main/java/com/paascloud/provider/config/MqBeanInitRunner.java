@@ -82,13 +82,20 @@ public class MqBeanInitRunner implements CommandLineRunner {
 		initConsumerListener(cf);
 	}
 
-
+	/**
+	 * 初始化生产者监控
+	 */
 	private void initProducerListener(CuratorFramework cf) throws Exception {
+		// TreeCache：可以监控整个树上的所有节点
 		TreeCache treeCache = new TreeCache(cf, GlobalConstant.ZK_REGISTRY_PRODUCER_ROOT_PATH);
+		// producerChangeListener: 实现TreeCacheListener
 		treeCache.getListenable().addListener(producerChangeListener);
 		treeCache.start();
 	}
 
+	/**
+	 * 初始化消费者监控
+	 */
 	private void initConsumerListener(CuratorFramework cf) throws Exception {
 		TreeCache treeCache = new TreeCache(cf, GlobalConstant.ZK_REGISTRY_CONSUMER_ROOT_PATH);
 		treeCache.getListenable().addListener(consumerChangeListener);

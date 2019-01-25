@@ -28,7 +28,12 @@ import javax.annotation.Resource;
 
 /**
  * The class Aliyun mq configuration.
- *
+ * 生成消费者
+ * 1. 设置配置属性
+ * 2. 设置订阅的topic，可以指定tag
+ * 3. 设置第一次启动的时候，从message queue的哪里开始消费
+ * 4. 设置消息处理器
+ * 5. 启动消费者
  * @author paascloud.net@gmail.com
  */
 @Slf4j
@@ -53,8 +58,14 @@ public class AliyunMqConfiguration {
 	 */
 	@Bean
 	public DefaultMQPushConsumer defaultMQPushConsumer() throws MQClientException {
+		// 1. 新建消费者组
+		// RocketMQ实际上都是拉模式，这里的DefaultMQPushConsumer实现了推模式，
+		// 也只是对拉消息服务做了一层封装，即拉到消息的时候触发业务消费者注册到这里的callback
 		DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(paascloudProperties.getAliyun().getRocketMq().getConsumerGroup());
+		// 2. 指定NameServer地址，多个地址以 ; 隔开
 		consumer.setNamesrvAddr(paascloudProperties.getAliyun().getRocketMq().getNamesrvAddr());
+		// 3. 设置Consumer第一次启动是从队列头部开始消费还是队列尾部开始消费
+		// 如果非第一次启动，那么按照上次消费的位置继续消费
 		consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
 
 		String[] strArray = AliyunMqTopicConstants.ConsumerTopics.OPT.split(GlobalConstant.Symbol.COMMA);
@@ -65,10 +76,12 @@ public class AliyunMqConfiguration {
 			if (PublicUtil.isEmpty(tags)) {
 				tags = "*";
 			}
+			// 4. 进行Topic订阅，订阅PushTopic下Tag为push的消息
 			consumer.subscribe(topic, tags);
 			log.info("RocketMq OpcPushConsumer topic = {}, tags={}", topic, tags);
 		}
 
+		// 5. 设置消息处理器
 		consumer.registerMessageListener(optPushConsumer);
 		consumer.setConsumeThreadMax(2);
 		consumer.setConsumeThreadMin(2);

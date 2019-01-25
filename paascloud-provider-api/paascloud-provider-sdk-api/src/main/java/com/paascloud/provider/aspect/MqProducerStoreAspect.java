@@ -44,7 +44,7 @@ public class MqProducerStoreAspect {
 	private MqMessageService mqMessageService;
 
 	@Value("${paascloud.aliyun.rocketMq.producerGroup}")
-	private String producerGroup;
+	private String producerGroup;	// PID_UAC（即当前子系统中的配置）
 
 	@Resource
 	private TaskExecutor taskExecutor;
@@ -70,9 +70,9 @@ public class MqProducerStoreAspect {
 		Object result;
 		Object[] args = joinPoint.getArgs();
 		MqProducerStore annotation = getAnnotation(joinPoint);
-		MqSendTypeEnum type = annotation.sendType();
-		int orderType = annotation.orderType().orderType();
-		DelayLevelEnum delayLevelEnum = annotation.delayLevel();
+		MqSendTypeEnum type = annotation.sendType();	// WAIT_CONFIRM：等待确认；SAVE_AND_SEND：直接发送；
+		int orderType = annotation.orderType().orderType();	// ORDER(1)：有序；DIS_ORDER(0)：无序
+		DelayLevelEnum delayLevelEnum = annotation.delayLevel();// Rocketmq 默认延时级别 ZERO(0, 不延时)；ONE(1, 1秒)....EIGHTEEN(18, 2小时)
 		if (args.length == 0) {
 			throw new TpcBizException(ErrorCodeEnum.TPC10050005);
 		}
@@ -90,18 +90,22 @@ public class MqProducerStoreAspect {
 
 		domain.setOrderType(orderType);
 		domain.setProducerGroup(producerGroup);
+		// 1. 等待确认
 		if (type == MqSendTypeEnum.WAIT_CONFIRM) {
 			if (delayLevelEnum != DelayLevelEnum.ZERO) {
 				domain.setDelayLevel(delayLevelEnum.delayLevel());
 			}
+			// 1.1 发送待确认消息到可靠消息系统（本地服务消息落地，可靠消息服务中心也持久化预发送消息，但是不发送）
 			mqMessageService.saveWaitConfirmMessage(domain);
 		}
-		result = joinPoint.proceed();
+		result = joinPoint.proceed();	// 返回注解方法，执行业务
+		// 2. 直接发送
 		if (type == MqSendTypeEnum.SAVE_AND_SEND) {
 			mqMessageService.saveAndSendMessage(domain);
+		// 3. XXX
 		} else if (type == MqSendTypeEnum.DIRECT_SEND) {
 			mqMessageService.directSendMessage(domain);
-		} else {
+		} else {	// type = WAIT_CONFIRM：本地事务执行成功，发送确认消息给消息中心
 			final MqMessageData finalDomain = domain;
 			taskExecutor.execute(() -> mqMessageService.confirmAndSendMessage(finalDomain.getMessageKey()));
 		}

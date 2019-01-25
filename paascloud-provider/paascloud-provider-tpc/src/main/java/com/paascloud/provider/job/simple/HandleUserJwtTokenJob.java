@@ -20,12 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Resource;
 
 /**
- * The class Spring simple job.
+ * 超时token更新为离线.
  *
  * @author paascloud.net @gmail.com
  */
 @Slf4j
-@ElasticJobConfig(cron = "0 0/30 * * * ?")
+@ElasticJobConfig(cron = "0 0/30 * * * ?")	// 每30分钟
 public class HandleUserJwtTokenJob implements SimpleJob {
 	@Resource
 	private UacRpcService uacRpcService;

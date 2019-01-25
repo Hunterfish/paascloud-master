@@ -35,7 +35,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@ElasticJobConfig(cron = "0 0/10 * * * ?", jobParameter = "fetchNum=1000")
+@ElasticJobConfig(cron = "0 0/10 * * * ?", jobParameter = "fetchNum=1000")	// 10分钟执行一次
 public class HandleWaitingConfirmMessageJob extends AbstractBaseDataflowJob<String> {
 	@Resource
 	private TpcMqMessageService tpcMqMessageService;

@@ -201,11 +201,18 @@ public class AliyunMqTopicConstants {
 
 	}
 
+	/**
+	 * Opc 监听 RocketMQ 消息的所有 tag
+	 * @param []
+	 * @return java.lang.String
+	 */
 	private static String buildOpcConsumerTopics() {
 		List<TopicObj> topicObjList = new ArrayList<>();
 
+		// 短信消息tag集合
 		Set<String> sendSmsTagList = new HashSet<>();
 		sendSmsTagList.add(MqTagEnum.REGISTER_USER_AUTH_CODE.getTag());
+		// 邮箱消息tag集合
 		Set<String> sendEmailTagList = new HashSet<>();
 		sendEmailTagList.add(MqTagEnum.FORGOT_PASSWORD_AUTH_CODE.getTag());
 		sendEmailTagList.add(MqTagEnum.ACTIVE_USER.getTag());
@@ -215,13 +222,13 @@ public class AliyunMqTopicConstants {
 
 		topicObjList.add(new TopicObj(MqTopicEnum.SEND_SMS_TOPIC.getTopic(), sendSmsTagList));
 		topicObjList.add(new TopicObj(MqTopicEnum.SEND_EMAIL_TOPIC.getTopic(), sendEmailTagList));
-
+		// 删除生产者、消费者历史消息 tag 集合
 		Set<String> deleteMessageTag = new HashSet<>();
 		deleteMessageTag.add(MqTagEnum.DELETE_CONSUMER_MESSAGE.getTag());
 		deleteMessageTag.add(MqTagEnum.DELETE_PRODUCER_MESSAGE.getTag());
 
 		topicObjList.add(new TopicObj(MqTopicEnum.TPC_TOPIC.getTopic(), deleteMessageTag));
-
+		// 更新删除附件消息 tag集合
 		Set<String> mdcMqTag = new HashSet<>();
 		mdcMqTag.add(MqTagEnum.UPDATE_ATTACHMENT.getTag());
 		mdcMqTag.add(MqTagEnum.DELETE_ATTACHMENT.getTag());

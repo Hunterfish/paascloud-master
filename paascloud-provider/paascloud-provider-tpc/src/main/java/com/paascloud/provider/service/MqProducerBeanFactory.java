@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The class Mq producer bean factory.
- *
+ * 生产者端
  * @author paascloud.net @gmail.com
  */
 public class MqProducerBeanFactory {
@@ -44,7 +44,9 @@ public class MqProducerBeanFactory {
 	 */
 	public static DefaultMQProducer getBean(String pid) {
 		Preconditions.checkArgument(StringUtils.isNotEmpty(pid), "getBean() pid is null");
-		return DEFAULT_MQ_PRODUCER_MAP.get(pid);
+		DefaultMQProducer producer = DEFAULT_MQ_PRODUCER_MAP.get(pid);
+		producer.setVipChannelEnabled(false);
+		return producer;
 	}
 
 	/**
@@ -60,6 +62,10 @@ public class MqProducerBeanFactory {
 			String simpleName = producerDto.getProducerGroup();
 			BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(DefaultMQProducer.class);
 			beanDefinitionBuilder.setScope(BeanDefinition.SCOPE_SINGLETON);
+			// DefaultMQProducer 两个重要属性
+			// 1. nameSrvAddr: nameServer地址，用户获得broker信息
+			// 2. producerGroup: 生产者集合，在同一个producerGroup中有不同的producer实例，
+			// 如果最早一个producer崩溃，则broker会通知该组内的其他producer实例进行事务提交或回滚
 			beanDefinitionBuilder.addPropertyValue("producerGroup", producerDto.getProducerGroup());
 			beanDefinitionBuilder.addPropertyValue("namesrvAddr", producerDto.getNamesrvAddr());
 			beanDefinitionBuilder.setInitMethodName("start");

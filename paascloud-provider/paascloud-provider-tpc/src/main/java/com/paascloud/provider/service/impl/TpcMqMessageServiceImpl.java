@@ -92,10 +92,11 @@ public class TpcMqMessageServiceImpl extends BaseService<TpcMqMessage> implement
 		update.setMessageStatus(MqSendStatusEnum.SENDING.sendStatus());
 		update.setId(message.getId());
 		update.setUpdateTime(new Date());
+		// 1. 更新消息状态为：SENDING
 		tpcMqMessageMapper.updateByPrimaryKeySelective(update);
-		// 创建消费待确认列表
+		// 2. 创建消费待确认列表，即设置该消息被哪些服务（CID）监听消费
 		this.createMqConfirmListByTopic(message.getMessageTopic(), message.getId(), message.getMessageKey());
-		// 直接发送消息
+		// 3. 直接发送消息
 		this.directSendMessage(message.getMessageBody(), message.getMessageTopic(), message.getMessageTag(), message.getMessageKey(), message.getProducerGroup(), message.getDelayLevel());
 	}
 
@@ -193,6 +194,8 @@ public class TpcMqMessageServiceImpl extends BaseService<TpcMqMessage> implement
 	public void createMqConfirmListByTopic(final String topic, final Long messageId, final String messageKey) {
 		List<TpcMqConfirm> list = Lists.newArrayList();
 		TpcMqConfirm tpcMqConfirm;
+		// 根据表 pc_tpc_mq_subscribe，查询出不同 topic 下所有的消费者服务ID consumer_code
+		//
 		List<String> consumerGroupList = tpcMqConsumerService.listConsumerGroupByTopic(topic);
 		if (PublicUtil.isEmpty(consumerGroupList)) {
 			throw new TpcBizException(ErrorCodeEnum.TPC100500010, topic);

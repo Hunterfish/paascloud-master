@@ -118,6 +118,13 @@ public class MqMessage implements Serializable {
 
 	}
 
+	/**
+	 * 封装成RocketMQ消息
+	 * 1. topic: 该消息将要往哪个topic发
+	 * 2. flag: 可以用作消息过滤
+	 * 3. properties: 扩展字段，可以做一些系统级别的通用值的透传
+	 * 4. body：消息内容
+	 */
 	private static Message buildMessage(String body, String topic, String tag, String key) {
 		Message message = new Message();
 		try {

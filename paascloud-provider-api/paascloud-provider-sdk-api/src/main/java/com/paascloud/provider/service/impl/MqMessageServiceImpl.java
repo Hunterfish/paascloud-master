@@ -67,8 +67,8 @@ public class MqMessageServiceImpl implements MqMessageService {
 		// 校验消息数据
 		this.checkMessage(mqMessageData);
 		// 先保存消息
-		mqMessageData.setMessageType(MqMessageTypeEnum.PRODUCER_MESSAGE.messageType());
-		mqMessageData.setId(UniqueIdGenerator.generateId());
+		mqMessageData.setMessageType(MqMessageTypeEnum.PRODUCER_MESSAGE.messageType());	// 设置生产者、消费者类型
+		mqMessageData.setId(UniqueIdGenerator.generateId());	// 生成唯一分布式ID
 		mqMessageDataMapper.insertSelective(mqMessageData);
 	}
 
@@ -131,11 +131,11 @@ public class MqMessageServiceImpl implements MqMessageService {
 	public void confirmReceiveMessage(String cid, MqMessageData messageData) {
 		final String messageKey = messageData.getMessageKey();
 		log.info("confirmReceiveMessage - 消费者={}, 确认收到key={}的消息", cid, messageKey);
-		// 先保存消息
+		// 持久化消费者确认消息 MqMessageData 到本地服务 mysql 中，表 pc_mq_message_data
 		messageData.setMessageType(MqMessageTypeEnum.CONSUMER_MESSAGE.messageType());
 		messageData.setId(UniqueIdGenerator.generateId());
 		mqMessageDataMapper.insertSelective(messageData);
-
+		// 调用远端服务 TPC，更新确认收到消息表状态为已确认，TpcMqConfirm，表 pc_tpc_mq_confirm；
 		Wrapper wrapper = tpcMqMessageFeignApi.confirmReceiveMessage(cid, messageKey);
 		log.info("tpcMqMessageFeignApi.confirmReceiveMessage result={}", wrapper);
 		if (wrapper == null) {
@@ -200,10 +200,12 @@ public class MqMessageServiceImpl implements MqMessageService {
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void saveWaitConfirmMessage(final MqMessageData mqMessageData) {
+		// 持久化 MqMessageData 到可靠消息服务 mysql
 		this.saveMqProducerMessage(mqMessageData);
 		// 发送预发送状态的消息给消息中心
 		TpcMqMessageDto tpcMqMessageDto = mqMessageData.getTpcMqMessageDto();
 		tpcMqMessageFeignApi.saveMessageWaitingConfirm(tpcMqMessageDto);
+		// mqMessageData此时为调用远端服务返回来的数据
 		log.info("<== saveWaitConfirmMessage - 存储预发送消息成功. messageKey={}", mqMessageData.getMessageKey());
 	}
 

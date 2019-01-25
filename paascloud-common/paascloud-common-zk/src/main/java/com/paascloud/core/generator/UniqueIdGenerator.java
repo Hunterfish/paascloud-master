@@ -12,7 +12,7 @@
 package com.paascloud.core.generator;
 
 /**
- * 分布式唯一ID生成器
+ * 分布式唯一ID生成器（雪花算法）
  *
  * @author paascloud.net@gmail.com
  */
@@ -160,4 +160,11 @@ public class UniqueIdGenerator implements IdGenerator {
 	public static long generateId() {
 		return UniqueIdGenerator.getInstance(IncrementIdGenerator.getServiceId()).nextId();
 	}
+
+//	public static void main(String[] args) {
+//		UniqueIdGenerator idGenerator = new UniqueIdGenerator(1);
+//		for (int i = 0; i < 30; i++) {
+//			System.out.println(idGenerator.nextId());
+//		}
+//	}
 }

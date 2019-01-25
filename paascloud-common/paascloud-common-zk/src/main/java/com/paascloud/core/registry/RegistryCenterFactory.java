@@ -16,6 +16,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+
+
+
+
 /**
  * 注册中心工厂.
  *
@@ -41,6 +45,7 @@ public final class RegistryCenterFactory {
 			return result;
 		}
 		result = new ZookeeperRegistryCenter(zookeeperProperties);
+		// 生成 zookeeper 客户端操作类 CuratorFramework
 		result.init();
 		REG_CENTER_REGISTRY.put(hashCode, result);
 		return result;
@@ -54,16 +59,23 @@ public final class RegistryCenterFactory {
 	 * @param app                 the app
 	 */
 	public static void startup(PaascloudProperties paascloudProperties, String host, String app) {
+		// 1. 初始化用于协调分布式服务的注册中心
 		CoordinatorRegistryCenter coordinatorRegistryCenter = createCoordinatorRegistryCenter(paascloudProperties.getZk());
 		RegisterDto dto = new RegisterDto(app, host, coordinatorRegistryCenter);
+		// 2. 生成该启动服务的分布式 ID
 		Long serviceId = new IncrementIdGenerator(dto).nextId();
 		IncrementIdGenerator.setServiceId(serviceId);
 		registerMq(paascloudProperties, host, app);
 	}
-
+	
+	/**
+	 * 注册 rocketmq 生产者消费者到 zookeeper 中心
+	 * @return void
+	 */
 	private static void registerMq(PaascloudProperties paascloudProperties, String host, String app) {
 		CoordinatorRegistryCenter coordinatorRegistryCenter = createCoordinatorRegistryCenter(paascloudProperties.getZk());
 		AliyunProperties.RocketMqProperties rocketMq = paascloudProperties.getAliyun().getRocketMq();
+		// 判断该服务是生产者还是消费者，还是两者都是
 		String consumerGroup = rocketMq.isReliableMessageConsumer() ? rocketMq.getConsumerGroup() : null;
 		String namesrvAddr = rocketMq.getNamesrvAddr();
 		String producerGroup = rocketMq.isReliableMessageProducer() ? rocketMq.getProducerGroup() : null;

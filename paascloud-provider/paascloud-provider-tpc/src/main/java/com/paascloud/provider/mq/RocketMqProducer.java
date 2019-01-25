@@ -46,11 +46,13 @@ public class RocketMqProducer {
 		return retrySendMessage(pid, message);
 	}
 
+	// pid：producerGroup --> 发送邮件就是 PID_UAC
 	private static SendResult retrySendMessage(String pid, Message msg) {
 		int iniCount = 1;
 		SendResult result;
 		while (true) {
 			try {
+				// Message中属性
 				result = MqProducerBeanFactory.getBean(pid).send(msg);
 				break;
 			} catch (Exception e) {

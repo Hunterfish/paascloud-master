@@ -32,7 +32,7 @@ public class OpcOssServiceTest extends PaasCloudOmcApplicationTests {
 	@Test
 	public void uploadFileTest() throws InterruptedException, IOException {
 
-		File file = new File("C:\\Users\\Lenovo\\Pictures\\love\\love6.jpg");
+		File file = new File("C:\\Users\\123\\Desktop\\snipaste_20181219_195935.png");
 
 		FileInputStream inputStream = new FileInputStream(file);
 
